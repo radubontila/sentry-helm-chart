@@ -70,6 +70,23 @@ spec:
       securityContext:
 {{ toYaml .Values.sentry.ingestMetricsConsumerPerf.securityContext | indent 8 }}
       {{- end }}
+      {{ if .Values.sentry.customCA }}
+      initContainers:
+        - name: {{ .Chart.Name }}-ca-bundle-init
+          image: "{{ template "sentry.image" . }}"
+          imagePullPolicy: {{ default "IfNotPresent" .Values.images.sentry.pullPolicy }}
+          volumeMounts:
+            - name: custom-ca
+              mountPath: /etc/pki/ca-trust/custom
+            - name: cacert
+              mountPath: /tmp/cacert
+          command:
+            - /bin/bash
+            - -c
+            - cat /usr/local/lib/python3.8/site-packages/certifi/cacert.pem /etc/pki/ca-trust/custom/{{ default "ca.crt" .Values.sentry.customCA.item }} > /tmp/cacert/cacert.pem
+          resources:
+{{ toYaml .Values.sentry.ingestMetricsConsumerPerf.resources | indent 12 }}
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}-ingest-metrics-consumer-perf
         image: "{{ template "sentry.image" . }}"
@@ -100,6 +117,13 @@ spec:
         {{- if and (eq .Values.filestore.backend "gcs") .Values.filestore.gcs.secretName }}
         - name: sentry-google-cloud-key
           mountPath: /var/run/secrets/google
+        {{ end }}
+        {{- if .Values.sentry.customCA }}
+        - name: custom-ca
+          mountPath: /etc/pki/ca-trust/custom
+        - name: cacert
+          mountPath: /usr/local/lib/python3.8/site-packages/certifi/cacert.pem
+          subPath: cacert.pem
         {{ end }}
 {{- if .Values.sentry.ingestMetricsConsumerPerf.volumeMounts }}
 {{ toYaml .Values.sentry.ingestMetricsConsumerPerf.volumeMounts | indent 8 }}
@@ -136,6 +160,13 @@ spec:
       - name: sentry-google-cloud-key
         secret:
           secretName: {{ .Values.filestore.gcs.secretName }}
+      {{ end }}
+      {{- if .Values.sentry.customCA }}
+      - name: custom-ca
+        secret:
+          secretName: {{ .Values.sentry.customCA.secretName | quote }}
+      - name: cacert
+        emptyDir: { }
       {{ end }}
 {{- if .Values.sentry.ingestMetricsConsumerPerf.volumes }}
 {{ toYaml .Values.sentry.ingestMetricsConsumerPerf.volumes | indent 6 }}

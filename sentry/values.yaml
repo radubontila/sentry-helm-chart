@@ -132,6 +132,11 @@ sentry:
   # existingSecret: "my-secret"
   # existingSecretKey: "my-secret-key"
   singleOrganization: true
+  # Mount and use custom CA
+  # customCA:
+  #   secretName: custom-ca
+  #   item: ca.crt
+  
   web:
     # if using filestore backend filesystem with RWO access, set strategyType to Recreate
     strategyType: RollingUpdate
@@ -151,10 +156,6 @@ sentry:
       annotations: {}
     # tolerations: []
     # podLabels: []
-    # Mount and use custom CA
-    # customCA:
-    #   secretName: custom-ca
-    #   item: ca.crt
 
     autoscaling:
       enabled: false
